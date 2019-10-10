@@ -63,6 +63,9 @@ class TextProcessingUtil:
         self.labels = np.unique(label_values)
         return list(map((lambda x: np.where(self.labels == x)[0][0]), label_values))
 
+    def get_vocabulary(self):
+        return self._sorted_vocabulary
+
     def get_bow_matrix(self, sentences, label_values=None):
         tokenized_sentences = list(map(self._preprocess_sentence, sentences))
         self._freq_words = heapq.nlargest(self._frequent_words_amount, self._vocabulary, key=self._vocabulary.get)
