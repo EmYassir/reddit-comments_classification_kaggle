@@ -17,13 +17,14 @@ def get_predictions(model, test_set_path):
 
 def dump_predictions(model, predictions, output_path=""):
     with open(f"{output_path}/submission.csv", mode='w') as submission_file:
+        classes = model.get_classes()
         writer = csv.writer(submission_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
         writer.writerow(["Id", "Category"])
         for i, prediction in enumerate(predictions):
-            writer.writerow([i, prediction])
+            writer.writerow([i, classes[prediction]])
 
 
 nb_model = get_trained_model(str('./data/data_train.pkl'))
-predictions = get_predictions(nb_model, str('./data/data_test.pkl'))
-dump_predictions(nb_model, predictions, str('./output'))
+preds = get_predictions(nb_model, str('./data/data_test.pkl'))
+dump_predictions(nb_model, preds, str('./output'))
 
