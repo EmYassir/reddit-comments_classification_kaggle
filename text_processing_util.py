@@ -9,18 +9,18 @@ from nltk.stem import WordNetLemmatizer
 
 class TextProcessingUtil:
 
-    def __init__(self):
+    def __init__(self, frequent_words_amount=2000):
         nltk.download('stopwords')
         nltk.download('punkt')
         nltk.download('wordnet')
         self._lemmatizer = WordNetLemmatizer()
         self._stop_words = set(stopwords.words('english'))
         self._tokenizer = RegexpTokenizer(r'\w+')
+        self._frequent_words_amount = frequent_words_amount
         self._vocabulary = {}
         self._sorted_vocabulary = None
-        self._frequent_words_amount = 2000
         self._freq_words = None
-        self.labels = None
+        self._labels = None
 
     def _clean_urls(self, sentence):
         return re.sub(r"http\S+", "", sentence)
@@ -60,11 +60,14 @@ class TextProcessingUtil:
         return bow
 
     def _get_numeric_labels(self, label_values):
-        self.labels = np.unique(label_values)
-        return list(map((lambda x: np.where(self.labels == x)[0][0]), label_values))
+        self._labels = np.unique(label_values)
+        return list(map((lambda x: np.where(self._labels == x)[0][0]), label_values))
 
     def get_vocabulary(self):
         return self._sorted_vocabulary
+
+    def get_labels(self):
+        return self._labels
 
     def get_bow_matrix(self, sentences, label_values=None):
         tokenized_sentences = list(map(self._preprocess_sentence, sentences))
