@@ -20,10 +20,10 @@ def dump_predictions(model, predictions, output_path=""):
         writer = csv.writer(submission_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
         writer.writerow(["Id", "Category"])
         for i, prediction in enumerate(predictions):
-            writer.writerow([i, model.get_classes()[prediction]])
+            writer.writerow([i, prediction])
 
 
-nb_model = get_trained_model("data/data_train.pkl")
-predictions = get_predictions("data/data_test.pkl")
-dump_predictions(nb_model, predictions)
+nb_model = get_trained_model(str('./data/data_train.pkl'))
+predictions = get_predictions(nb_model, str('./data/data_test.pkl'))
+dump_predictions(nb_model, predictions, str('./output'))
 

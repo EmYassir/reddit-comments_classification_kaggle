@@ -64,7 +64,7 @@ class TextProcessingUtil:
         return list(map((lambda x: np.where(self._labels == x)[0][0]), label_values))
 
     def get_vocabulary(self):
-        return self._sorted_vocabulary
+        return np.array(self._sorted_vocabulary)
 
     def get_labels(self):
         return self._labels
