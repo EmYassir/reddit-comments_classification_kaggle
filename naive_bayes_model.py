@@ -2,6 +2,7 @@ import numpy as np
 import pickle as pkl
 from text_processing_util import TextProcessingUtil
 
+
 class NaiveBayesWithSmoothing:
     
     def __init__(self, alpha=0.0, filename='model.npy'):
@@ -27,8 +28,7 @@ class NaiveBayesWithSmoothing:
         if p != 0.0:
             return np.log(p)
         return 0.0
-        
-    
+
     def train(self, sentences, labels):
         print('train')
         # Getting preprocessed data
@@ -48,14 +48,13 @@ class NaiveBayesWithSmoothing:
         # Computing words likelihoods
         print('processing words...')
         self._wordProbVec = np.zeros((d, self._classes.shape[0]))
-        for v in range(d):
-            for i, c in enumerate(self._classes):
-                x = self._X
-                c_idx = np.where(self._y == i)[0]
-                numerator = np.sum(self._X[c_idx, v], axis =0) + self._alpha
-                denominator = np.sum(self._X[:,v], axis =0) + self._alpha * d
-                self._wordProbVec[v, i] = self.log_prob(numerator) - self.log_prob(denominator)
-
+        for i, c in enumerate(self._classes):
+            c_idx = np.where(self._y == i)[0]
+            log_denominator = self.log_prob(np.sum(self._X[c_idx]) + self._alpha * d)
+            for v in range(d):
+                numerator = np.sum(self._X[c_idx, v], axis=0) + self._alpha
+                print(self._X[c_idx, v])
+                self._wordProbVec[v, i] = self.log_prob(numerator) - log_denominator
 
     # Returns the class to which the sentence belongs 
     def predict(self, sentences):
@@ -73,4 +72,3 @@ class NaiveBayesWithSmoothing:
                 predictions[i, k] = p + self._classProbVec[k]
         
         return np.argmax(predictions, axis=1)
-    
