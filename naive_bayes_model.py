@@ -28,14 +28,14 @@ class NaiveBayesWithSmoothing:
     
     def split_data(self, X):
         inds = np.arange(X.shape[0])
-        n_train = np.floor(X.shape[0] * 0.7)
+        n_train = int(X.shape[0] * 0.7)
         np.random.shuffle(inds)
         train_inds = inds[:n_train]
         val_inds = inds[n_train:]
         self._Xtrain = X[train_inds,:-1] 
         self._ytrain = X[train_inds,-1] 
         self._XVal = X[val_inds,:-1]
-        self._yVAl = X[val_inds,-1]
+        self._yVal = X[val_inds,-1]
 
     def get_classes(self):
         return self._classes
@@ -69,21 +69,45 @@ class NaiveBayesWithSmoothing:
                 self._wordProbVec[v, i] = self.log_prob(numerator) - log_denominator
 
     # Returns the class to which the sentence belongs 
-    def predict(self, sentences):
+    def predict(self, X):
         print('Predicting new comments...')
-        bag_of_words = sentences
-        n = bag_of_words.shape[0]
+        n = X.shape[0]
         predictions = np.zeros((n, self._classes.shape[0]))
-        for i, test_sentence in enumerate(bag_of_words):
+        for i, ex in enumerate(X):
             for k, c in enumerate(self._classes):
                 p = 0.0
-                idx_list = np.where(test_sentence != 0)[0]  # TODO handle the case where no words in the voc are present
+                idx_list = np.where(ex != 0)[0]  # TODO handle the case where no words in the voc are present
                 for j in idx_list:
                     p += self._wordProbVec[j, k] 
                 predictions[i, k] = p + self._classProbVec[k]
-        
         return np.argmax(predictions, axis=1)
     
+    # Returns the class to which the sentence belongs 
+    def accuracy(self, outputs, labels):
+        return round(np.mean(outputs == labels), 2) * 100.0
+        
+        
     # Training + Validation
-    def fit(self, data, labels, classes):
+    def fit(self, X, classes):
+        # Splitting between Training/Validation sets
         self.split_data(X)
+        # Defining the range of hyperparameter alpha
+        hyper_params = np.linspace(0.0,1.0,20)
+        alpha_star = 0.0 
+        # Best score seen so far
+        best_score = 0.0
+        print('Fitting model...')
+        
+        # Training with different alphas
+        for alpha in hyper_params:
+            self._alpha = alpha
+            self.train(self._Xtrain, self._ytrain, classes)
+            outputs = self.predict(self._XVal)
+            new_score = self.accuracy(outputs, self._yVal)
+            #print('Accuracy of %.2f %% for alpha == %.2f' %(new_score, alpha))
+            if (new_score > best_score):
+                best_score = new_score
+                alpha_star = alpha
+        self._alpha = alpha_star
+        print('Got accuracy of %.2f %% for alpha* == %.2f' %(best_score,alpha_star))
+        

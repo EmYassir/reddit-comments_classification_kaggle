@@ -21,9 +21,7 @@ class TextClassifier:
     def fit_model(self, train_set_path):
         comments, labels = np.load(train_set_path, allow_pickle=True)
         data = self._util.get_bow_matrix(comments, labels)
-        X = data[:,0:-1]
-        y = data[:,-1]
-        self.model.fit(X, y, self._util.get_labels())
+        self.model.fit(data, self._util.get_labels())
         
     def get_predictions(self, test_set_path):
         comments = np.load(test_set_path, allow_pickle=True)
