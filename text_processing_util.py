@@ -67,7 +67,7 @@ class TextProcessingUtil:
         return np.array(self._sorted_vocabulary)
 
     def get_labels(self):
-        return self._labels
+        return np.copy(self._labels)
 
     def get_bow_matrix(self, sentences, label_values=None):
         tokenized_sentences = list(map(self._preprocess_sentence, sentences))
