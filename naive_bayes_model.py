@@ -14,8 +14,8 @@ class NaiveBayesWithSmoothing:
         self._y = None
         self._Xtrain = None
         self._ytrain = None
-        self._XVal = None
-        self._yVAl = None
+        self._Xval = None
+        self._yval = None
         self._classes = None
         self._wordProbVec = None
         self._classProbVec = None
@@ -27,15 +27,42 @@ class NaiveBayesWithSmoothing:
         pass
     
     def split_data(self, X):
-        inds = np.arange(X.shape[0])
-        n_train = int(X.shape[0] * 0.7)
-        np.random.shuffle(inds)
-        train_inds = inds[:n_train]
-        val_inds = inds[n_train:]
-        self._Xtrain = X[train_inds,:-1] 
-        self._ytrain = X[train_inds,-1] 
-        self._XVal = X[val_inds,:-1]
-        self._yVal = X[val_inds,-1]
+        print("X.shape:")
+        print(X.shape)
+        y = X[:, -1]
+        d = X.shape[1] - 1
+        n = X.shape[0]
+        n_train = 0.85 * n
+        n_val = n - n_train
+        self._Xtrain = np.empty((0,d))
+        self._Xval = np.empty((0,d))
+        self._ytrain = np.empty((0,))
+        self._yval = np.empty((0,))
+        n_class = self._classes.shape[0]
+        for i in range(n_class):
+            # getting samples of class i
+            c_idx = np.where(y == i)[0]
+            portion = X[c_idx]
+            
+            # Filling Training set
+            n_per_train = int(n_train/n_class)
+            self._Xtrain = np.vstack((self._Xtrain, portion[0:n_per_train,:-1]))
+            self._ytrain= np.hstack((self._ytrain, portion[0:n_per_train, -1]))
+            
+            # Filling Validation set
+            n_per_val = int(n_val/n_class)
+            s_val = n_per_train + 1
+            e_val = n_per_train + n_per_val      
+            self._Xval = np.vstack((self._Xval, portion[s_val:e_val,:-1]))
+            self._yval = np.hstack((self._yval, portion[s_val:e_val,-1]))
+        
+        for i in range(n_class):
+            percentage = np.mean(self._ytrain == i)
+            #print('percentage of class %d in training set is %.2f %%' %(i, percentage*100.0))
+            
+            percentage = np.mean(self._yval == i)
+            #print('percentage of class %d in validation set is %.2f %%' %(i, percentage*100.0))
+        
 
     def get_classes(self):
         return self._classes
@@ -89,10 +116,20 @@ class NaiveBayesWithSmoothing:
         
     # Training + Validation
     def fit(self, X, classes):
+        self._classes = classes
         # Splitting between Training/Validation sets
         self.split_data(X)
+        print('Xtrain (%d,%d):' %(self._Xtrain.shape[0],self._Xtrain.shape[1]))
+        #print(self._Xtrain)
+        #print('Ytrain:')
+        #print(self._ytrain)
+        print('Xval(%d,%d):' %(self._Xval.shape[0],self._Xval.shape[1]))
+        #print(self._Xval)
+        #print('Yval')
+        print(self._yval)
         # Defining the range of hyperparameter alpha
         hyper_params = np.linspace(0.0,1.0,20)
+        #hyper_params = [0.5]
         alpha_star = 0.0 
         # Best score seen so far
         best_score = 0.0
@@ -102,9 +139,13 @@ class NaiveBayesWithSmoothing:
         for alpha in hyper_params:
             self._alpha = alpha
             self.train(self._Xtrain, self._ytrain, classes)
-            outputs = self.predict(self._XVal)
-            new_score = self.accuracy(outputs, self._yVal)
-            #print('Accuracy of %.2f %% for alpha == %.2f' %(new_score, alpha))
+            outputs = self.predict(self._Xval)
+            new_score = self.accuracy(outputs, self._yval)
+            #print('outputs shape:')
+            #print(outputs.shape)
+            #print('values.shape')
+            #print(self._yval.shape)
+            print('Accuracy of %.2f %% for alpha == %.2f' %(new_score, alpha))
             if (new_score > best_score):
                 best_score = new_score
                 alpha_star = alpha
