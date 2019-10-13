@@ -5,6 +5,7 @@ import heapq
 from nltk.corpus import stopwords
 from nltk.tokenize import RegexpTokenizer
 from nltk.stem import WordNetLemmatizer
+from nltk.stem.snowball import SnowballStemmer
 
 
 class TextProcessingUtil:
@@ -14,6 +15,7 @@ class TextProcessingUtil:
         nltk.download('punkt')
         nltk.download('wordnet')
         self._lemmatizer = WordNetLemmatizer()
+        self._stemmer = SnowballStemmer("english")
         self._stop_words = set(stopwords.words('english'))
         self._tokenizer = RegexpTokenizer(r'\w+')
         self._frequent_words_amount = frequent_words_amount
@@ -28,6 +30,13 @@ class TextProcessingUtil:
 
     def _remove_stop_words(self, tokenized_sentence):
         return [w for w in tokenized_sentence if w not in self._stop_words]
+
+    def _apply_stemmer(self, tokenized_sentence):
+        stems = []
+        for token in tokenized_sentence:
+            stem = self._stemmer.stem(token)
+            stems.append(stem)
+        return stems
 
     def _apply_verb_lemmatizer(self, tokenized_sentence):
         lemmas = []
@@ -52,9 +61,10 @@ class TextProcessingUtil:
         step2 = self._clean_urls(step1)
         step3 = self._tokenizer.tokenize(step2)
         step4 = self._remove_stop_words(step3)
-        step5 = self._apply_noun_lemmatizer(step4)
-        step6 = self._apply_verb_lemmatizer(step5)
-        return step6
+        step5 = self._apply_stemmer(step4)
+        step6 = self._apply_noun_lemmatizer(step5)
+        step7 = self._apply_verb_lemmatizer(step6)
+        return step7
 
     def _get_bow_representation(self, tokenized_sentence):
         if not self._sorted_vocabulary:
