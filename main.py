@@ -5,7 +5,7 @@ from naive_bayes_model import NaiveBayesWithSmoothing
 
 def get_trained_model(train_set_path):
     comments, labels = np.load(train_set_path, allow_pickle=True)
-    model = NaiveBayesWithSmoothing()
+    model = NaiveBayesWithSmoothing(0.5)
     model.train(comments, labels)
     return model
 
@@ -16,7 +16,8 @@ def get_predictions(model, test_set_path):
 
 
 def dump_predictions(model, predictions, output_path=""):
-    with open(f"{output_path}/submission.csv", mode='w') as submission_file:
+    filepath = str(output_path) + '/submission.csv'
+    with open(filepath, mode='w', newline='') as submission_file:
         classes = model.get_classes()
         writer = csv.writer(submission_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
         writer.writerow(["Id", "Category"])
