@@ -1,6 +1,6 @@
 import numpy as np
 import pickle as pkl
-
+import random as rand
 
 class NaiveBayesWithSmoothing:
     
@@ -26,13 +26,18 @@ class NaiveBayesWithSmoothing:
     def dump(self, outFilePath = 'model.npy'):
         pass
     
+    def shuffle_rows(self, X):
+        indexes = list(range(X.shape[0]))
+        rand.shuffle(indexes)
+        return X[indexes]
+        
     def split_data(self, X):
         print("X.shape:")
         print(X.shape)
         y = X[:, -1]
         d = X.shape[1] - 1
         n = X.shape[0]
-        n_train = 0.85 * n
+        n_train = 0.95 * n
         n_val = n - n_train
         self._Xtrain = np.empty((0,d))
         self._Xval = np.empty((0,d))
@@ -42,7 +47,7 @@ class NaiveBayesWithSmoothing:
         for i in range(n_class):
             # getting samples of class i
             c_idx = np.where(y == i)[0]
-            portion = X[c_idx]
+            portion = self.shuffle_rows(X[c_idx])
             
             # Filling Training set
             n_per_train = int(n_train/n_class)
@@ -126,7 +131,7 @@ class NaiveBayesWithSmoothing:
         print('Xval(%d,%d):' %(self._Xval.shape[0],self._Xval.shape[1]))
         #print(self._Xval)
         #print('Yval')
-        print(self._yval)
+        #print(self._yval)
         # Defining the range of hyperparameter alpha
         hyper_params = np.linspace(0.0,1.0,20)
         #hyper_params = [0.5]
