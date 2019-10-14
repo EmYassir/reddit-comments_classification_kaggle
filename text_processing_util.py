@@ -24,15 +24,6 @@ class TextProcessingUtil:
         self._sorted_vocabulary = None
         self._freq_words = None
         self._labels = None
-        
-    def _is_alpha(self, word):
-        value = False
-        try:
-            value = word.encode('ascii').isalpha()
-        except:
-            value = False
-        finally:
-            return value
 
     def _clean_urls(self, sentence):
         return re.sub(r"http\S+", "", sentence)
@@ -46,21 +37,6 @@ class TextProcessingUtil:
             stem = self._stemmer.stem(token)
             stems.append(stem)
         return stems
-    
-    def _apply_alphanumeric(self, tokenized_sentence):
-        alphanums = []
-        for token in tokenized_sentence:
-            if self._is_alpha(token) == True:
-                alphanums.append(token)
-        return alphanums
-
-    def _apply_sizeSelection(self, tokenized_sentence):
-        words = []
-        for token in tokenized_sentence:
-            l = len(token) 
-            if l > 2 and l < 30:
-                words.append(token)
-        return words
     
     def _apply_verb_lemmatizer(self, tokenized_sentence):
         lemmas = []
@@ -88,9 +64,7 @@ class TextProcessingUtil:
         step5 = self._apply_stemmer(step4)
         step6 = self._apply_noun_lemmatizer(step5)
         step7 = self._apply_verb_lemmatizer(step6)
-        step8 = self._apply_alphanumeric(step7)
-        step9 = self._apply_sizeSelection(step8)
-        return step9
+        return step7
 
     def _get_bow_representation(self, tokenized_sentence):
         if not self._sorted_vocabulary:
