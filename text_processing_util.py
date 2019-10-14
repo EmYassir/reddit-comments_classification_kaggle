@@ -24,15 +24,6 @@ class TextProcessingUtil:
         self._sorted_vocabulary = None
         self._freq_words = None
         self._labels = None
-        
-    def _is_alpha(self, word):
-        value = False
-        try:
-            value = word.encode('ascii').isalpha()
-        except:
-            value = False
-        finally:
-            return value
 
     def _clean_urls(self, sentence):
         return re.sub(r"http\S+", "", sentence)
@@ -46,31 +37,12 @@ class TextProcessingUtil:
             stem = self._stemmer.stem(token)
             stems.append(stem)
         return stems
-    
-    def _apply_alphanumeric(self, tokenized_sentence):
-        alphanums = []
-        for token in tokenized_sentence:
-            if self._is_alpha(token) == True:
-                alphanums.append(token)
-        return alphanums
 
-    def _apply_sizeSelection(self, tokenized_sentence):
-        words = []
-        for token in tokenized_sentence:
-            l = len(token) 
-            if l > 2 and l < 30:
-                words.append(token)
-        return words
-    
     def _apply_verb_lemmatizer(self, tokenized_sentence):
         lemmas = []
         for token in tokenized_sentence:
             lemma = self._lemmatizer.lemmatize(token, pos="v")
             lemmas.append(lemma)
-            if lemma not in self._vocabulary.keys():
-                self._vocabulary[lemma] = 1
-            else:
-                self._vocabulary[lemma] += 1
         return lemmas
 
     def _apply_noun_lemmatizer(self, tokenized_sentence):
@@ -80,17 +52,41 @@ class TextProcessingUtil:
             lemmas.append(lemma)
         return lemmas
 
+    def _extract_numeric_words(self, tokenized_sentence):
+        alphas = []
+        for token in tokenized_sentence:
+            try:
+                float(token)
+            except ValueError:
+                alphas.append(token)
+        return alphas
+
+    def _apply_size_selection(self, tokenized_sentence):
+        words = []
+        for token in tokenized_sentence:
+            if 2 < len(token) < 30:
+                words.append(token)
+        return words
+
+    def _add_to_vocabulary(self, tokenized_sentence):
+        for token in tokenized_sentence:
+            if token not in self._vocabulary.keys():
+                self._vocabulary[token] = 1
+            else:
+                self._vocabulary[token] += 1
+        return tokenized_sentence
+
     def _preprocess_sentence(self, sentence):
-        step1 = sentence.lower()
-        step2 = self._clean_urls(step1)
-        step3 = self._tokenizer.tokenize(step2)
-        step4 = self._remove_stop_words(step3)
-        step5 = self._apply_stemmer(step4)
-        step6 = self._apply_noun_lemmatizer(step5)
-        step7 = self._apply_verb_lemmatizer(step6)
-        step8 = self._apply_alphanumeric(step7)
-        step9 = self._apply_sizeSelection(step8)
-        return step9
+        res = sentence.lower()  # step1
+        res = self._clean_urls(res)  # step2
+        res = self._tokenizer.tokenize(res)  # step3
+        res = self._remove_stop_words(res)  # step4
+        res = self._apply_size_selection(res)  # step5
+        res = self._apply_stemmer(res)  # step6
+        res = self._apply_noun_lemmatizer(res)  # step7
+        res = self._extract_numeric_words(res)  # step8
+        res = self._apply_verb_lemmatizer(res)  # step9
+        return self._add_to_vocabulary(res)
 
     def _get_bow_representation(self, tokenized_sentence):
         if not self._sorted_vocabulary:
