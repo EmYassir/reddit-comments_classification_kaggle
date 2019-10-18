@@ -73,9 +73,8 @@ class NaiveBayesWithSmoothing:
             return np.log(p)
         return 0.0
 
-    def _get_tfidf_matrix(self, data, labels, classes):
+    def _get_tfidf_matrix(self, data):
 
-        n, d = data.shape
         tf_idf_matrix = None
         for i, c in enumerate(self._classes):
             c_idx = np.where(self._y == i)[0]
@@ -106,7 +105,7 @@ class NaiveBayesWithSmoothing:
             self._classProbVec[i] = self.log_prob(c_idx.shape[0]) - self.log_prob(n)
 
         # Computing words' likelihoods by using tf-idf weights
-        tf_idf_matrix = self._get_tfidf_matrix(data, labels, classes)
+        tf_idf_matrix = self._get_tfidf_matrix(data)
         self._wordProbVec = np.zeros((d, self._classes.shape[0]))
         current_row = 0
         for i, c in enumerate(self._classes):
@@ -120,7 +119,9 @@ class NaiveBayesWithSmoothing:
                 self._wordProbVec[v, i] = self.log_prob(numerator) - log_denominator
             current_row += class_count
 
-    # Returns the class to which the sentence belongs
+    """
+    Returns the class to which the sentence belongs
+    """
     def predict(self, X):
         print('Predicting new comments...')
         n = X.shape[0]
@@ -138,7 +139,9 @@ class NaiveBayesWithSmoothing:
     def accuracy(self, outputs, labels):
         return round(np.mean(outputs == labels), 2) * 100.0
 
-    # Training + Validation
+    """
+    Training + Validation
+    """
     def fit(self, X, classes):
         self._classes = classes
         # Splitting between Training/Validation sets

@@ -1,8 +1,6 @@
 import csv
 import numpy as np
-import pickle as pkl
 from text_processing_util import TextProcessingUtil
-
 
 
 class TextClassifier:
@@ -36,5 +34,3 @@ class TextClassifier:
             writer.writerow(["Id", "Category"])
             for i, prediction in enumerate(predictions):
                 writer.writerow([i, classes[prediction]])
-
-    

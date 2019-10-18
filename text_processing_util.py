@@ -30,6 +30,9 @@ class TextProcessingUtil:
         self._labels = None
         self._numeric_train_labels = None
 
+    """
+    Text pre-processing utilitary methods
+    """
     def _clean_urls(self, sentence):
         return re.sub(r"http\S+", "", sentence)
 
@@ -82,6 +85,9 @@ class TextProcessingUtil:
         res = self._apply_stemmer(res)
         return np.array(res) if current_label is None else self._add_to_vocabulary(current_label, res)
 
+    """
+    Bag of words representation building methods
+    """
     def _get_bow_representation(self, tokenized_sentence):
         if not self._sorted_vocabulary:
             self._sorted_vocabulary = sorted(set(self._freq_words))
@@ -93,14 +99,6 @@ class TextProcessingUtil:
             except ValueError:
                 pass
         return bow
-
-    def _get_numeric_label(self, index):
-        return None if self._numeric_train_labels is None else self._numeric_train_labels[index]
-
-    def _set_numeric_labels(self, label_values):
-        if label_values is not None:
-            self._labels = np.unique(label_values)
-            self._numeric_train_labels = np.array(list(map((lambda x: np.where(self._labels == x)[0][0]), label_values)))
 
     def _set_frequent_unique_words(self):
         commons_set = None
@@ -117,11 +115,22 @@ class TextProcessingUtil:
 
         self._freq_words += heapq.nlargest(self._frequent_words_amount, self._general_vocabulary, key=self._general_vocabulary.get)
 
+    """
+    Utilitary getters and setters
+    """
     def get_vocabulary(self):
         return np.array(self._sorted_vocabulary)
 
     def get_labels(self):
         return self._labels
+
+    def _get_numeric_label(self, index):
+        return None if self._numeric_train_labels is None else self._numeric_train_labels[index]
+
+    def _set_numeric_labels(self, label_values):
+        if label_values is not None:
+            self._labels = np.unique(label_values)
+            self._numeric_train_labels = np.array(list(map((lambda x: np.where(self._labels == x)[0][0]), label_values)))
 
     def get_bow_matrix(self, sentences, label_values=None):
         self._set_numeric_labels(label_values)
