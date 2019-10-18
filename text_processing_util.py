@@ -10,20 +10,25 @@ from nltk.stem.snowball import SnowballStemmer
 
 class TextProcessingUtil:
 
-    def __init__(self, frequent_words_amount=2000, frequent_words_per_label=75):
+    def __init__(self, frequent_words_amount=2500, frequent_words_per_label=1010, frequent_words_to_skip=0):
         nltk.download('stopwords')
         nltk.download('punkt')
         nltk.download('wordnet')
         self._lemmatizer = WordNetLemmatizer()
         self._stemmer = SnowballStemmer("english")
-        self._stop_words = set(stopwords.words('english'))
+        self._stop_words = set(stopwords.words('english')),
         self._tokenizer = RegexpTokenizer(r'\w+')
         self._frequent_words_amount = frequent_words_amount
         self._frequent_words_per_label = frequent_words_per_label
+        self._frequent_words_to_skip = frequent_words_to_skip
         self._vocabulary = {}
+        self._general_vocabulary = {}
+        self._unique_vocabulary = {}
+        self._unique_words = {}
         self._sorted_vocabulary = None
-        self._freq_words = None
+        self._freq_words = []
         self._labels = None
+        self._numeric_train_labels = None
 
     def _clean_urls(self, sentence):
         return re.sub(r"http\S+", "", sentence)
@@ -37,13 +42,6 @@ class TextProcessingUtil:
             stem = self._stemmer.stem(token)
             stems.append(stem)
         return stems
-
-    def _apply_verb_lemmatizer(self, tokenized_sentence):
-        lemmas = []
-        for token in tokenized_sentence:
-            lemma = self._lemmatizer.lemmatize(token, pos="v")
-            lemmas.append(lemma)
-        return lemmas
 
     def _apply_noun_lemmatizer(self, tokenized_sentence):
         lemmas = []
@@ -61,32 +59,28 @@ class TextProcessingUtil:
                 alphas.append(token)
         return alphas
 
-    def _apply_size_selection(self, tokenized_sentence):
-        words = []
-        for token in tokenized_sentence:
-            if 2 < len(token) < 30:
-                words.append(token)
-        return words
+    def _add_to_vocabulary(self, current_label, tokenized_sentence):
+        if current_label not in self._vocabulary.keys():
+            self._vocabulary[current_label] = {}
 
-    def _add_to_vocabulary(self, tokenized_sentence):
         for token in tokenized_sentence:
-            if token not in self._vocabulary.keys():
-                self._vocabulary[token] = 1
+            if token not in self._vocabulary[current_label].keys():
+                self._vocabulary[current_label][token] = 1
+                self._general_vocabulary[token] = 1
             else:
-                self._vocabulary[token] += 1
-        return tokenized_sentence
+                self._vocabulary[current_label][token] += 1
+                self._general_vocabulary[token] = 1
+        return np.array(tokenized_sentence)
 
-    def _preprocess_sentence(self, sentence):
-        res = sentence.lower()  # step1
-        res = self._clean_urls(res)  # step2
-        res = self._tokenizer.tokenize(res)  # step3
-        res = self._remove_stop_words(res)  # step4
-        res = self._apply_size_selection(res)  # step5
-        res = self._apply_stemmer(res)  # step6
-        res = self._apply_noun_lemmatizer(res)  # step7
-        res = self._extract_numeric_words(res)  # step8
-        res = self._apply_verb_lemmatizer(res)  # step9
-        return self._add_to_vocabulary(res)
+    def _preprocess_sentence(self, current_label, sentence):
+        res = sentence.lower()
+        res = self._clean_urls(res)
+        res = self._tokenizer.tokenize(res)
+        res = self._remove_stop_words(res)
+        res = self._extract_numeric_words(res)
+        res = self._apply_noun_lemmatizer(res)
+        res = self._apply_stemmer(res)
+        return np.array(res) if current_label is None else self._add_to_vocabulary(current_label, res)
 
     def _get_bow_representation(self, tokenized_sentence):
         if not self._sorted_vocabulary:
@@ -100,26 +94,28 @@ class TextProcessingUtil:
                 pass
         return bow
 
-    def _get_numeric_labels(self, label_values):
-        self._labels = np.unique(label_values)
-        return list(map((lambda x: np.where(self._labels == x)[0][0]), label_values))
+    def _get_numeric_label(self, index):
+        return None if self._numeric_train_labels is None else self._numeric_train_labels[index]
 
-    def _get_specialized_vocabulary(self, tokenized_sentences, numeric_label_values):
-        specialized_vocabulary = {}
-        for index, tokenized_sentence in enumerate(tokenized_sentences):
-            if numeric_label_values[index] not in specialized_vocabulary.keys():
-                specialized_vocabulary[numeric_label_values[index]] = {}
-            for token in tokenized_sentence:
-                if token not in self._freq_words:
-                    if token not in specialized_vocabulary[numeric_label_values[index]].keys():
-                        specialized_vocabulary[numeric_label_values[index]][token] = 1
-                    else:
-                        specialized_vocabulary[numeric_label_values[index]][token] += 1
+    def _set_numeric_labels(self, label_values):
+        if label_values is not None:
+            self._labels = np.unique(label_values)
+            self._numeric_train_labels = np.array(list(map((lambda x: np.where(self._labels == x)[0][0]), label_values)))
 
-        for label in specialized_vocabulary.keys():
-            class_dic = specialized_vocabulary[label]
-            class_freqs = heapq.nlargest(self._frequent_words_per_label, class_dic, key=class_dic.get)
-            self._freq_words += class_freqs
+    def _set_frequent_unique_words(self):
+        commons_set = None
+        for c in range(self._labels.shape[0]):
+            self._unique_words[c] = np.array(list(self._vocabulary[c].keys()))
+            commons_set = self._unique_words[c] if commons_set is None else np.intersect1d(commons_set, self._unique_words[c], assume_unique=True)
+
+        for c in self._unique_words.keys():
+            self._unique_words[c] = np.setdiff1d(self._unique_words[c], commons_set, assume_unique=True)
+            self._unique_vocabulary[c] = {}
+            for w in self._unique_words[c]:
+                self._unique_vocabulary[c][w] = self._vocabulary[c][w]
+            self._freq_words += heapq.nlargest(self._frequent_words_per_label, self._unique_vocabulary[c], key=self._unique_vocabulary[c].get)
+
+        self._freq_words += heapq.nlargest(self._frequent_words_amount, self._general_vocabulary, key=self._general_vocabulary.get)
 
     def get_vocabulary(self):
         return np.array(self._sorted_vocabulary)
@@ -128,12 +124,8 @@ class TextProcessingUtil:
         return self._labels
 
     def get_bow_matrix(self, sentences, label_values=None):
-        tokenized_sentences = list(map(self._preprocess_sentence, sentences))
-        self._freq_words = heapq.nlargest(self._frequent_words_amount, self._vocabulary, key=self._vocabulary.get)
-        if label_values is not None:
-            numeric_labels = self._get_numeric_labels(label_values)
-            self._get_specialized_vocabulary(tokenized_sentences, numeric_labels)
+        self._set_numeric_labels(label_values)
+        tokenized_sentences = np.array([self._preprocess_sentence(self._get_numeric_label(i), sentence) for i, sentence in enumerate(sentences)])
+        self._set_frequent_unique_words()
         bow_reps = list(map(self._get_bow_representation, tokenized_sentences))
-        print(self._sorted_vocabulary)
-        print(len(self._sorted_vocabulary))
-        return np.column_stack((bow_reps, numeric_labels)) if label_values else np.array(bow_reps)
+        return np.column_stack((bow_reps, self._numeric_train_labels)) if label_values else np.array(bow_reps)
