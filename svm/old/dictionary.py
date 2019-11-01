@@ -9,10 +9,13 @@ import numpy as np
 
 class Dictionary:
     
-    def __init__(self, n_classes, masked = False):
+    def __init__(self, sorted_labels, masked = False):
         # labels
-        self._labels = np.arrange(n_classes)
+        n = sorted_labels.shape[0]
+        self._n_classes = n
+        self._labels = np.copy(sorted_labels)
 
+        
         # all words seen so far
         self._all_words_counts = {}
         
@@ -22,9 +25,9 @@ class Dictionary:
         # all classes where the word appears
         self._word_classes = {}
         
-        # all classes where the word appears
-        self._word_classes = {}
-        
+        # Mask
+        self._masked = masked
+        self._masked_words = []
         
     # Gets sorted classes
     def get_classes(self):
@@ -51,7 +54,6 @@ class Dictionary:
                 self._word_classes[word].append(label)
             else:
                 self._word_classes[word] = [label]
-    
     
     # Get number of times the word 'word' appears per class
     def get_word_count_per_class(self, word, label = -1):
@@ -82,6 +84,17 @@ class Dictionary:
             print('Invalid label id given: could not find label id %d' %label)
             return 0
         return len(self._words_counts_per_class[label])
+        
+    # Update the list of masked words
+    def update_mask(self, words):
+        for word in words:
+            if word not in self._masked_words:
+                self._masked_words.append(word)
+    
+    # Set to true to filter banned words
+    def set_apply_mask(self, value = False):
+        self._masked = value
+        
 
     # Total number of words
     def get_global_count(self):
@@ -105,10 +118,7 @@ class Dictionary:
                 for w in sorted(dic, key=dic.get, reverse=True):
                     file.write('%s : %d\n' %(w, dic[w]))
                 file.write('\n')
+        
     
-    # Returns list of most popular words per class
-    def get_n_top_words_per_label(number label, number):
-        
-        
     
     

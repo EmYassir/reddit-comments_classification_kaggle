@@ -18,10 +18,6 @@ nltk.download('wordnet')
 nltk.download('punkt')
 
 
-REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
-BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
-STOPWORDS = set(stopwords.words('english'))
-
 class NlpUtil:
     # Init
     def __init__(self):
