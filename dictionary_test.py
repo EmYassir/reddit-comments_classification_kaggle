@@ -2,6 +2,8 @@ import numpy as np
 from dictionary.dictionary import Dictionary
 from text.text_util import Text_Util
 
+TOKENIZED = 0
+
 train_set_path = './data/data_train.pkl'
 test_set_path = './data/data_test.pkl'
 
@@ -28,7 +30,11 @@ dic = Dictionary(sorted_labels)
 # Preprocessing text
 print('### Preprocessing text...')
 text_util = Text_Util()
-X = text_util.get_preprocessed_data_1(np.array(comments))
+X = None
+if TOKENIZED == 1:
+    X = text_util.get_preprocessed_tokenized_sentences(np.array(comments))
+else:
+    X = text_util.get_preprocessed_sentences(np.array(comments))
 y = numerical_labels.astype(int)
 print('Total words in the corpus before cleanup: %d' 
       %(text_util.get_number_scanned_words()))
@@ -36,7 +42,10 @@ print('Total words in the corpus before cleanup: %d'
 # Updating dictionary
 print('### Updating dictionary...')
 for i in range(len(X)):
-    dic.update(X[i], y[i])
+    if TOKENIZED == 1:
+        dic.update_tokenized(X[i], y[i])
+    else:
+        dic.update_sentence(X[i], y[i])
 
 # tests
 print('### Testing dictionary:')
@@ -57,6 +66,9 @@ for i in range(len(sorted_labels)):
     dic.dump_bottom_words_per_label(1000, i)
 print('Dumping all words common to all labels...')
 dic.dump_words_common_to_labels(10000000, list(range(len(sorted_labels))))
+
+
+
     
 
 

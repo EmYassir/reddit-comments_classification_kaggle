@@ -26,15 +26,19 @@ class Text_Util:
         self._lemmatizer = WordNetLemmatizer()
         self._stemmer = SnowballStemmer("english", ignore_stopwords=True)
         self._stop_words = set(stopwords.words('english'))
-        self._bad_syms = re.compile('[^0-9a-z #+_]')
-        self._replace_by_space = re.compile('[/(){}\[\]\|@,;#$&]')
+        self._replace_by_space = re.compile('[/(){}\[\]\|@,;:?!]')
+        self._bad_symbols = re.compile('[^0-9a-z #+_=-]')
         self._tokenizer = RegexpTokenizer(r'[\d.,]+|[A-Z][.A-Z]+\b\.*|\w+|\S')
         self._urls = {'www': 1, 'http': 2, 'https': 3, 'com':4}
     
     def _lower_chars(self, comment):
         return comment.lower()
     
-    
+    def _remove_bad_syms(self, comment):
+        comment = self._replace_by_space.sub(' ', comment)
+        comment = self._bad_symbols.sub(' ', comment)
+        return comment
+     
     def _remove_stop_words(self, tokenized_comment):
         return [w for w in tokenized_comment if w not in self._stop_words]
     
@@ -58,6 +62,12 @@ class Text_Util:
             if word not in self._urls:
                 words.append(word)
         return words
+    
+    def _remove_urls(self, comment):
+        comment =  re.sub(r"http:\/\/\S+", " ", comment)
+        comment =  re.sub(r"https:\/\/\S+", " ", comment)
+        comment =  re.sub(r"www.\S+", " ", comment)
+        return comment
 
     
     def _remove_small_words(self, tokenized_comment):
@@ -84,7 +94,7 @@ class Text_Util:
     def get_number_scanned_words(self):
         return self._scanned_words
     
-    def get_preprocessed_data_1(self, data):
+    def get_preprocessed_tokenized_sentences(self, data):
         # 'data' is an array of comments
         n = data.shape[0]
         results = []
@@ -99,6 +109,48 @@ class Text_Util:
             aux = self._lemmatize(aux)           # step4
             aux = self._remove_small_words(aux)  # step5
             aux = self._stem(aux)                # step6     
+            results.append(aux)
+        return np.array(results)
+    
+    # Useful for sk learn libraries
+    def get_preprocessed_sentences(self, data):
+        # 'data' is an array of comments
+        n = data.shape[0]
+        results = []
+        for i in range(n):
+            comment = data[i]   
+            comment = self._remove_urls(comment)
+            comment = self._remove_bad_syms(comment)
+            aux = self._tokenizer.tokenize(comment.lower())
+            self._scanned_words += len(aux)
+            aux = self._remove_stop_words(aux)   # step1
+            #aux = self._remove_url_extra(aux)    # step2
+            aux = self._remove_non_alpha(aux)    # step3
+            aux = self._lemmatize(aux)           # step4
+            aux = self._remove_small_words(aux)  # step5
+            #aux = self._stem(aux)                # step6   
+            # now we 're-convert' tokenized words to string
+            aux = ' '.join(aux)
+            # We finally append the result 
+            results.append(aux)
+        return np.array(results)
+    
+    # Useful for sk learn libraries
+    def old_get_preprocessed_sentences(self, data):
+        n = data.shape[0]
+        results = []
+        for i in range(n):
+            comment = data[i]   
+            comment = comment.replace('_', ' ')
+            aux = self._tokenizer.tokenize(comment.lower())
+            self._scanned_words += len(aux)
+            aux = self._remove_stop_words(aux)   # step1
+            aux = self._remove_url_extra(aux)    # step2
+            aux = self._remove_non_alpha(aux)    # step3
+            aux = self._lemmatize(aux)           # step4
+            aux = self._remove_small_words(aux)  # step5
+            aux = self._stem(aux)                # step6 
+            aux = ' '.join(aux)
             results.append(aux)
         return np.array(results)
         

@@ -32,7 +32,7 @@ class Dictionary:
         return np.copy(self._labels)
     
     # Update the dictionary
-    def update(self, tokenized_sentence, label) :
+    def update_tokenized(self, tokenized_sentence, label) :
         for word in tokenized_sentence:
             # Updating the global dictionary
             if word in self._all_words_counts:
@@ -55,6 +55,10 @@ class Dictionary:
             else:
                 self._word_classes[word] = [label]
     
+     # Update the dictionary with non tokenized sentence
+    def update_sentence(self, sentence, label) :
+        tokenized_sentence = sentence.split(' ')
+        self.update_tokenized(tokenized_sentence, label)
     
     # Get number of times the word 'word' appears per class
     def get_word_count_per_class(self, word, label = -1):
