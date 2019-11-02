@@ -30,7 +30,9 @@ print('### Preprocessing text...')
 text_util = Text_Util()
 X = text_util.get_preprocessed_data_1(np.array(comments))
 y = numerical_labels.astype(int)
-
+print('Total words in the corpus before cleanup: %d' 
+      %(text_util.get_number_scanned_words()))
+      
 # Updating dictionary
 print('### Updating dictionary...')
 for i in range(len(X)):

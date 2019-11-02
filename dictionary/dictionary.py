@@ -184,7 +184,7 @@ class Dictionary:
         with open(filepath, 'w',  encoding="utf-8") as file:
             file.write('Label %s (%d top words):\n' % (self._labels[label], n))
             for w in list_words:
-                file.write('%s, ' %w)
+                file.write('%s\n, ' %w)
             file.write('\n')
         
         

@@ -22,6 +22,7 @@ class Text_Util:
     
     # Init
     def __init__(self):
+        self._scanned_words = 0
         self._lemmatizer = WordNetLemmatizer()
         self._stemmer = SnowballStemmer("english", ignore_stopwords=True)
         self._stop_words = set(stopwords.words('english'))
@@ -80,6 +81,8 @@ class Text_Util:
             stems.append(stem)
         return stems
     
+    def get_number_scanned_words(self):
+        return self._scanned_words
     
     def get_preprocessed_data_1(self, data):
         # 'data' is an array of comments
@@ -88,13 +91,14 @@ class Text_Util:
         for i in range(n):
             comment = data[i]   
             comment = comment.replace('_', ' ')
-            aux = self._tokenizer.tokenize(comment.lower())           
+            aux = self._tokenizer.tokenize(comment.lower())
+            self._scanned_words += len(aux)
             aux = self._remove_stop_words(aux)   # step1
             aux = self._remove_url_extra(aux)    # step2
             aux = self._remove_non_alpha(aux)    # step3
             aux = self._lemmatize(aux)           # step4
             aux = self._remove_small_words(aux)  # step5
-            aux = self._stem(aux)                # step6          
+            aux = self._stem(aux)                # step6     
             results.append(aux)
         return np.array(results)
         
