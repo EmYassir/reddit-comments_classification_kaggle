@@ -56,6 +56,29 @@ class Text_Util:
         return alphanums
     
     
+    def _remove_non_ascii(self, tokenized_comment):
+        alphanums = []
+        for token in tokenized_comment:
+            is_ascii = True
+            try:
+                token.encode('ascii')
+            except UnicodeEncodeError:
+                is_ascii = False
+            
+            if is_ascii == True:
+                alphanums.append(token)
+        return alphanums
+    
+    
+    def _remove_numeric_words(self, tokenized_sentence):
+        alphas = []
+        for token in tokenized_sentence:
+            try:
+                float(token)
+            except ValueError:
+                alphas.append(token)
+        return alphas
+    
     def _remove_url_extra(self, tokenized_comment):
         words = []
         for word in tokenized_comment:
@@ -114,44 +137,43 @@ class Text_Util:
     
     # Useful for sk learn libraries
     def get_preprocessed_sentences(self, data):
-        # 'data' is an array of comments
-        n = data.shape[0]
+        n = len(data)
         results = []
         for i in range(n):
             comment = data[i]   
             comment = self._remove_urls(comment)
-            comment = self._remove_bad_syms(comment)
-            aux = self._tokenizer.tokenize(comment.lower())
-            self._scanned_words += len(aux)
-            aux = self._remove_stop_words(aux)   # step1
-            #aux = self._remove_url_extra(aux)    # step2
-            aux = self._remove_non_alpha(aux)    # step3
-            aux = self._lemmatize(aux)           # step4
-            aux = self._remove_small_words(aux)  # step5
-            #aux = self._stem(aux)                # step6   
+            comment = comment.replace('_', ' ')
+            comment = self._tokenizer.tokenize(comment.lower())
+            self._scanned_words += len(comment)
+            comment = self._remove_non_ascii(comment)
+            comment = self._remove_stop_words(comment)       # step1
+            comment = self._remove_numeric_words(comment)    # step3
+            comment = self._lemmatize(comment)               # step4
+            comment = self._remove_small_words(comment)      # step5
+            comment = self._stem(comment)                    # step6   
             # now we 're-convert' tokenized words to string
-            aux = ' '.join(aux)
+            comment = ' '.join(comment)
             # We finally append the result 
-            results.append(aux)
+            results.append(comment)
         return np.array(results)
     
     # Useful for sk learn libraries
-    def old_get_preprocessed_sentences(self, data):
-        n = data.shape[0]
+    def get_preprocessed_sentences_2(self, data):
+        n = len(data)
         results = []
         for i in range(n):
             comment = data[i]   
             comment = comment.replace('_', ' ')
-            aux = self._tokenizer.tokenize(comment.lower())
-            self._scanned_words += len(aux)
-            aux = self._remove_stop_words(aux)   # step1
-            aux = self._remove_url_extra(aux)    # step2
-            aux = self._remove_non_alpha(aux)    # step3
-            aux = self._lemmatize(aux)           # step4
-            aux = self._remove_small_words(aux)  # step5
-            aux = self._stem(aux)                # step6 
-            aux = ' '.join(aux)
-            results.append(aux)
+            comment = self._tokenizer.tokenize(comment.lower())
+            self._scanned_words += len(comment)
+            comment = self._remove_stop_words(comment)   # step1
+            comment = self._remove_url_extra(comment)    # step2
+            comment = self._remove_non_alpha(comment)    # step3
+            comment = self._lemmatize(comment)           # step4
+            comment = self._remove_small_words(comment)  # step5
+            comment = self._stem(comment)                # step6 
+            comment = ' '.join(comment)
+            results.append(comment)
         return np.array(results)
         
         
