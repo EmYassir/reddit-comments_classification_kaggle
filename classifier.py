@@ -41,7 +41,7 @@ def preprocess_text(path, test = False):
         
     # Preprocessing text
     text_util = Text_Util()
-    X = text_util.get_preprocessed_sentences_2(np.array(comments))
+    X = text_util.get_preprocessed_sentences(np.array(comments))
     y = None
     if not test:
         y = np.array(labels)
