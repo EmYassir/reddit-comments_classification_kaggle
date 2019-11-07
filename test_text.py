@@ -1,7 +1,7 @@
 import numpy as np
 from text.text_util import Text_Util
 
-
+TOKENIZED = 0
 train_set_path = './data/data_train.pkl'
 test_set_path = './data/data_test.pkl'
 
@@ -31,6 +31,8 @@ else:
     
 print('### Dumping cleaned data...')    
 dump_text(X, './output/cleaned_data.txt')
+
+
 
 
 

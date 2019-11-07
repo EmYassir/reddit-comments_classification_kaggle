@@ -1,84 +1,67 @@
-from classifier import preprocess_text
-from classifier import create_tfidf_vector
-from classifier import select_features
-from classifier import split_data
-from classifier import test_model
-from classifier import dump_predictions
-
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import ComplementNB
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import BaggingClassifier
 from sklearn.feature_selection import SelectKBest, chi2
-from sklearn.metrics import accuracy_score
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import VotingClassifier
+from classifier import Classifier_Util
+import sys
 
-import numpy as np
-import csv
+IN_COLAB = 'google.colab' in sys.modules
 
 # Loading data
 train_set_path = './data/data_train.pkl'
 test_set_path = './data/data_test.pkl'
 output_file = './output/submission.csv'
-comments, labels = np.load(train_set_path, allow_pickle=True)
+
+if IN_COLAB:
+    train_set_path = 'data_train.pkl'
+    test_set_path = 'data_test.pkl'
+    
+
+
 
 
 # Experiment with countVectorizer + TfidfTransformer
-print('### Begin program')
-print('Processing train data')
-X, y = preprocess_text(train_set_path, False)
+print('### Begin ')
+class_tool =  Classifier_Util()
+
+# setting models to process features
+class_tool.set_word_vectorizer(TfidfVectorizer())
+class_tool.set_feature_selector(SelectKBest(chi2, 20000))
+
+print('Preprocessing raw data...')
+# Preprocessing text
+X_train, y_train = class_tool.preprocess_text(train_set_path)
+X_test, y_test = class_tool.preprocess_text(test_set_path, test = True)
+
 
 # Creating words vectors
-vectorizer = TfidfVectorizer()
-vectorizer.fit(X)
-X = vectorizer.transform(X)
-print('Tfidf vector size = (%d, %d)' %(X.shape[0], X.shape[1]))
+print('Creating word vectors...')
+class_tool.fit_words_vectorizer(X, y)
+X_train = class_tool.get_words_vector(X_train)
+X_test = class_tool.get_words_vector(X_test)
 
-# Selecting best features
-#k = 25000
-#print('Performing feature selection ...')
-#print('Selecting %d best features:' %k)
-#Selector = SelectKBest(chi2, k).fit(X, y)
-#indexes = Selector.get_support()
-#print(indexes)
-#print(indexes.shape)
-#X_sel = SelectKBest(chi2, k).fit_transform(X, y)
-#Xsel = select_features(k, X, y)
+# Feature selection
+print('Selecting features...')
+class_tool.fit_feature_selector(X_train, y_train)
+X_train = class_tool.get_selected_features(X_train)
+X_test = class_tool.get_selected_features(X_test)
 
-# Instantiating models
-X_train, X_test, y_train, y_test = split_data(X, y, 0.015)
-alphas = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 1.0]
-alpha_star = 0.0
-best_score = 0.0
-for alpha in alphas:
-    model = MultinomialNB(alpha)
-    print('Training model ...')
-    model.fit(X_train, y_train)
-    print('Predicting ...')
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_pred, y_test)
-    print('-> alpha = %f : accuracy %s' %(alpha, accuracy))
-    if accuracy > best_score:
-        best_score = accuracy
-        alpha_star = alpha
+# Setting voting classifier
+models = {}
+models['Multinomial Naive Bayes 0.10'] = MultinomialNB(alpha=0.10)
+models['Linear Support Vector Machine l2 sq-hinge'] = LinearSVC(penalty='l2', loss='squared_hinge', max_iter=5000)
+models['Linear Support Vector Machine with SGD l2 hinge'] = SGDClassifier(penalty='l2', loss='hinge', max_iter=5000)
+class_tool.set_voting_classifier(models, VotingClassifier)
 
-
-print('Re-training model on the whole data ...')
-model = MultinomialNB(alpha_star)
-model.fit(X, y)
-
-print('Processing test data')
-X, y = preprocess_text(test_set_path, True)
-X = vectorizer.transform(X)
-print('Predicting ...')
-#y_pred = model.predict(X[:,np.array(indexes)])
-y_pred = model.predict(X)
-print('Generating file ...')
-dump_predictions(y_pred, output_file)
-    
-   
+class_tool.train_predict_dump(X_train, y_train, X_test)
 print('### End of program')
 
 

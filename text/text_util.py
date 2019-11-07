@@ -29,7 +29,6 @@ class Text_Util:
         self._replace_by_space = re.compile('[/(){}\[\]\|@,.;:?!]')
         self._bad_symbols = re.compile('[^0-9a-z #+_=-]')
         self._tokenizer = RegexpTokenizer(r'[\d.,]+|[A-Z][.A-Z]+\b\.*|\w+|\S')
-        #self._tokenizer = RegexpTokenizer('\w+|\$[\d\.]+|\S+')
         self._urls = {'www': 1, 'http': 2, 'https': 3, 'com':4}
     
     def _lower_chars(self, comment):
@@ -118,6 +117,15 @@ class Text_Util:
     def get_number_scanned_words(self):
         return self._scanned_words
     
+    def filter_sentence(self, sentence, filter_words_list):
+        new_sentence = []
+        tokenized_sentence = sentence.split(' ')
+        for w in tokenized_sentence:
+            if w not in filter_words_list:
+                new_sentence.append(w)
+        return ' '.join(new_sentence)
+    
+    
     def get_preprocessed_tokenized_sentences(self, data):
         # 'data' is an array of comments
         n = data.shape[0]
@@ -125,6 +133,7 @@ class Text_Util:
         for i in range(n):
             comment = data[i]   
             comment = comment.replace('_', ' ')
+            comment = self._lower_chars(comment)
             aux = self._tokenizer.tokenize(comment.lower())
             self._scanned_words += len(aux)
             aux = self._remove_stop_words(aux)   # step1
@@ -167,16 +176,19 @@ class Text_Util:
         results = []
         for i in range(n):
             comment = data[i]   
-            comment = comment.replace('_', ' ')
-            comment = self._tokenizer.tokenize(comment.lower())
+            comment = self._lower_chars(comment)
+            comment = self._remove_urls(comment)
+            comment = self._remove_bad_syms(comment)
+            comment = self._tokenizer.tokenize(comment)
             self._scanned_words += len(comment)
-            comment = self._remove_stop_words(comment)   # step1
-            comment = self._remove_url_extra(comment)    # step2
+            comment = self._remove_stop_words(comment)       # step1
             comment = self._remove_non_alpha(comment)    # step3
-            comment = self._lemmatize(comment)           # step4
-            comment = self._remove_small_words(comment)  # step5
-            comment = self._stem(comment)                # step6 
+            comment = self._lemmatize(comment)               # step4
+            comment = self._remove_small_words(comment)      # step5
+            comment = self._stem(comment)                    # step6   
+            # now we 're-convert' tokenized words to string
             comment = ' '.join(comment)
+            # We finally append the result 
             results.append(comment)
         return np.array(results)
         
@@ -200,5 +212,11 @@ class Text_Util:
             results.append(comment)
         return np.array(results)
     
+    # Useful for sk learn libraries
+    def dump_data(self, data, output):
+        with open(output, 'w',  encoding="utf-8") as file:
+            for comment in data:
+                file.write('%s\n\n' %comment)
+
     
     
